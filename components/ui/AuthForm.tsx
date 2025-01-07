@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import Image from 'next/image'
 import Link from 'next/link'
@@ -18,15 +18,18 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import CustomInput from '@/components/ui/CustomInput';
+import CustomInput from './CustomInput';
 import { authFormSchema } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation'
+import { AArrowDown, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { getLoggedInUser, signIn, signUp } from '@/lib/actions/user.actions';
 
 const AuthForm = ({ type }: { type: string }) => {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  
 
   const formSchema = authFormSchema(type);
 
@@ -38,29 +41,26 @@ const AuthForm = ({ type }: { type: string }) => {
         password: ''
       },
     })
-   
+
     // 2. Define a submit handler.
     const onSubmit = async (data: z.infer<typeof formSchema>) => {
       setIsLoading(true);
 
       try {
         // Sign up with Appwrite & create plaid token
-        
-        if(type === 'sign-up') {
-          const userData = {
-            firstName: data.firstName!,
-            lastName: data.lastName!,
-            address1: data.address1!,
-            city: data.city!,
-            state: data.state!,
-            postalCode: data.postalCode!,
-            dateOfBirth: data.dateOfBirth!,
-            ssn: data.ssn!,
-            email: data.email,
-            password: data.password
-          }
 
-        const newUser = await signUp(userData);
+        if(type === 'sign-up') {
+          const newUser = await signUp({
+            ...data,
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            address1: data.address1 || '',
+            city: data.city || '',
+            state: data.state || '',
+            postalCode: data.postalCode || '',
+            dateOfBirth: data.dateOfBirth || '',
+            ssn: data.ssn || ''
+          });
 
           setUser(newUser);
         }
@@ -69,14 +69,7 @@ const AuthForm = ({ type }: { type: string }) => {
           const response = await signIn({
             email: data.email,
             password: data.password,
-          });
-
-          if (!response.ok) {
-            throw new Error('Sign-in failed');
-          }
-
-          const user = await response.json();
-          return user;
+          })
 
           if(response) router.push('/')
         }
@@ -119,7 +112,7 @@ const AuthForm = ({ type }: { type: string }) => {
       </header>
       {user ? (
         <div className="flex flex-col gap-4">
-          {/* <PlaidLink user={user} variant="primary" /> */}
+          {/* PlaidLink */}
         </div>
       ): (
         <>
@@ -130,11 +123,11 @@ const AuthForm = ({ type }: { type: string }) => {
                   <div className="flex gap-4">
                     <CustomInput control={form.control} name='firstName' label="First Name" placeholder='Enter your first name' />
                     <CustomInput control={form.control} name='lastName' label="Last Name" placeholder='Enter your first name' />
-                  </div>
+                    </div>
                   <CustomInput control={form.control} name='address1' label="Address" placeholder='Enter your specific address' />
                   <CustomInput control={form.control} name='city' label="City" placeholder='Enter your city' />
                   <div className="flex gap-4">
-                    <CustomInput control={form.control} name='state' label="State" placeholder='Example: NY' />
+                    <CustomInput control={form.control} name='state' label="State" placeholder='Example: VIC' />
                     <CustomInput control={form.control} name='postalCode' label="Postal Code" placeholder='Example: 11101' />
                   </div>
                   <div className="flex gap-4">
@@ -178,41 +171,4 @@ const AuthForm = ({ type }: { type: string }) => {
   )
 }
 
-async function signIn(credentials: { email: string; password: string }) {
-  // Implement the sign-in logic here and return the response
-  // For example:
-  const response = await fetch('/api/signin', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(credentials),
-  });
-
-  if (!response.ok) {
-    throw new Error('Sign-in failed');
-  }
-
-  return response;
-}
-
 export default AuthForm
-
-async function signUp(userData: { firstName: string; lastName: string; address1: string; city: string; state: string; postalCode: string; dateOfBirth: string; ssn: string; email: string; password: string }) {
-  // Implement the sign-up logic here and return the user data
-  // For example:
-  const response = await fetch('/api/signup', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(userData),
-  });
-
-  if (!response.ok) {
-    throw new Error('Sign-up failed');
-  }
-
-  const newUser = await response.json();
-  return newUser;
-}
